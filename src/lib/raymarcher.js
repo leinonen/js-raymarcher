@@ -108,7 +108,7 @@ function light(p, normal, lightPos, dist) {
   let lightDirection = normalize(sub(lightPos, p));
   let diffuse = Math.max(0.0, dot(normal, lightDirection));
 
-  let sceneColor = [.1, .1, .1]
+  let sceneColor = [.1, .1, .4]
   let objectColor = [1, .8, 0]
 
   if (dist <= clipFar) {
@@ -142,8 +142,12 @@ export function render_image(ctx, width, height) {
       let p = add(camPos, scale(rd, t));
       let normal = getNormal(p)
 
-      let sceneColor = light(p, normal, lightPos, t);
-  
+      // let sceneColor = light(p, normal, lightPos, t);
+
+      // test
+      let c = 1 - Math.sqrt(uvx * uvx + uvy * uvy)
+      let sceneColor = [c, c, c]
+
       color(data, offs, sceneColor[0], sceneColor[1], sceneColor[2]);
 
       offs += 4;
