@@ -7,40 +7,24 @@ function vec3(x, y, z) {
   return [x, y, z]
 }
 
-function add(v1, v2) {
-  return [
-    v1[0] + v2[0],
-    v1[1] + v2[1],
-    v1[2] + v2[2]
-  ]
-}
-
-function sub(v1, v2) {
-  return [
-    v1[0] - v2[0],
-    v1[1] - v2[1],
-    v1[2] - v2[2]
-  ]
-}
-
-function scale(v, x) {
-  return [
-    v[0] * x,
-    v[1] * x,
-    v[2] * x
-  ]
-}
-
 function length(v) {
   return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 }
 
+function add(v1, v2) {
+  return [v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]]
+}
+
+function sub(v1, v2) {
+  return [v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]]
+}
+
+function scale(v, x) {
+  return [v[0] * x, v[1] * x, v[2] * x]
+}
+
 function cross(a, b) {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0]
-  ]
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
 }
 
 function dot(a, b) {
@@ -48,8 +32,7 @@ function dot(a, b) {
 }
 
 function normalize(v) {
-  let ilen = 1.0 / length(v)
-  return [v[0] * ilen, v[1] * ilen, v[2] * ilen]
+  return scale(v, 1.0 / length(v))
 }
 
 function rayDirection(x, y, camPos, lookAt, fov) {
@@ -77,14 +60,12 @@ function getNormal(p) {
 
 function raymarch(ro, rd) {
   let t = 0.0;
-  let iterations = 0;
   for (let i = 0; i < 100; i++) {
     let dist = map(add(ro, scale(rd, t)));
     if ((dist < clipNear) || (t > clipFar)) {
       break;
     }
     t += dist * stepSize;
-    iterations++;
   }
   return t;
 }
@@ -126,7 +107,7 @@ export function render_image(ctx, width, height) {
     for (let x = 0; x < width; x++) {
       let dx = x / width;
 
-      let aspect = 1.0; // width / height;
+      let aspect = width / height;
       let uvx = ((2.0 * dx) - 1.0) * aspect;
       let uvy = ((2.0 * dy) - 1.0) * aspect;
 
