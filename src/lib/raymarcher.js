@@ -48,15 +48,8 @@ function dot(a, b) {
 }
 
 function normalize(v) {
-  let len = length(v)
-  if (length > 0.00001) {
-    return [
-      v[0] / len,
-      v[1] / len,
-      v[2] / len
-    ]
-  }
-  return [0, 0, 0]
+  let ilen = 1.0 / length(v)
+  return [v[0] * ilen, v[1] * ilen, v[2] * ilen]
 }
 
 function rayDirection(x, y, camPos, lookAt, fov) {
@@ -86,7 +79,6 @@ function raymarch(ro, rd) {
   let t = 0.0;
   let iterations = 0;
   for (let i = 0; i < 100; i++) {
-    // let k = map(ro + rd * t);
     let dist = map(add(ro, scale(rd, t)));
     if ((dist < clipNear) || (t > clipFar)) {
       break;
@@ -112,6 +104,7 @@ function light(p, normal, lightPos, dist) {
   let objectColor = [1, .8, 0]
 
   if (dist <= clipFar) {
+    // sceneColor = scale(objectColor, diffuse);
     sceneColor = objectColor;
   }
 
@@ -126,7 +119,7 @@ export function render_image(ctx, width, height) {
   let fov = 1.0;
   let lookAt = [0, 0, 1.0]
   let camPos = [0, 0, -2.5]
-  let lightPos = [0, 0.5, -2.5]
+  let lightPos = [0, 1, -3.5]
 
   for (let y = 0; y < height; y++) {
     let dy = y / height;
@@ -142,11 +135,7 @@ export function render_image(ctx, width, height) {
       let p = add(camPos, scale(rd, t));
       let normal = getNormal(p)
 
-      // let sceneColor = light(p, normal, lightPos, t);
-
-      // test
-      let c = 1 - Math.sqrt(uvx * uvx + uvy * uvy)
-      let sceneColor = [c, c, c]
+      let sceneColor = light(p, normal, lightPos, t);
 
       color(data, offs, sceneColor[0], sceneColor[1], sceneColor[2]);
 
