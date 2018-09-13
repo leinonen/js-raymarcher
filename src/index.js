@@ -2,8 +2,8 @@ import { render_image } from './lib/raymarcher'
 
 function main() {
   let canvas = document.createElement('canvas')
-  canvas.width = 1000;
-  canvas.height = 1000;
+  canvas.width = 512;
+  canvas.height = 512;
   document.body.appendChild(canvas)
   let context = canvas.getContext('2d')
 

@@ -46,8 +46,15 @@ function sdSphere(p, radius) {
   return length(p) - radius;
 }
 
+function sinusoidBumps(p){
+  let t = 0;
+  return Math.sin(p[0]*16.+t*0.57)*Math.cos(p[1]*16.+t*2.17)*Math.sin(p[2]*16.-t*1.31) + 
+     0.5*Math.sin(p[0]*32.+t*0.07)*Math.cos(p[1]*32.+t*2.11)*Math.sin(p[2]*32.-t*1.23);
+}
+
 function map(p) {
-  return sdSphere(p, 1.0);
+  let b = sinusoidBumps(p) * 0.04;
+  return sdSphere(add(p, vec3(b,b,b)), 1.5);
 }
 
 function getNormal(p) {
@@ -70,6 +77,10 @@ function raymarch(ro, rd) {
   return t;
 }
 
+function reflect(i, n) {
+  return sub(i, scale(n, 2.0 * dot(n, i) ))
+}
+
 const color = (data, offs, r, g, b) => {
   data[offs + 0] = r * 255;
   data[offs + 1] = g * 255;
@@ -77,18 +88,26 @@ const color = (data, offs, r, g, b) => {
   data[offs + 3] = 255;
 }
 
-function light(p, normal, lightPos, dist) {
-  let lightDirection = normalize(sub(lightPos, p));
-  let diffuse = Math.max(0.0, dot(normal, lightDirection));
-
+function light(p, normal, camPos, lightPos, dist) {
   let sceneColor = [.1, .1, .4]
-  let objectColor = [1, .8, 0]
-
-  if (dist <= clipFar) {
-    sceneColor = add(sceneColor, scale(objectColor, diffuse));
-    // sceneColor = objectColor;
+  
+  if (dist >= clipFar) {
+    return sceneColor
   }
 
+  let lightDirection = normalize(sub(lightPos, p));
+  let eyeDirection = normalize(sub(camPos, p));
+  let diffuse = Math.max(0.0, dot(normal, lightDirection));
+  let specularPower = 128.0;
+  let specular = Math.pow(Math.max(0.0, dot(reflect(scale(lightDirection, -1), normal), eyeDirection)), specularPower);
+  let Ka = 0.1
+  let Kd = 0.9;
+
+  let objectColor = [1, .8, 0]
+
+  sceneColor = add(sceneColor, scale(objectColor, Ka + diffuse * Kd));
+  sceneColor = add(sceneColor, scale(vec3(1,1,1), specular))
+  
   return sceneColor;
 }
 
@@ -100,9 +119,7 @@ export function render_image(ctx, width, height) {
   let fov = 1.0;
   let lookAt = [0, 0, 1.0]
   let camPos = [0, 0, -2.5]
-  let lightPos = [0, -2, -3.5]
-
-  console.log(getNormal(vec3(0,0,0)));
+  let lightPos = [5, 2, -3.5]
 
   for (let y = 0; y < height; y++) {
     let dy = y / height;
@@ -111,14 +128,14 @@ export function render_image(ctx, width, height) {
 
       let aspect = width / height;
       let uvx = ((2.0 * dx) - 1.0) * aspect;
-      let uvy = ((2.0 * dy) - 1.0) * aspect;
+      let uvy = ((2.0 * (1.0 - dy)) - 1.0) * aspect;
 
       let rd = rayDirection(uvx, uvy, camPos, lookAt, fov);
       let t = raymarch(camPos, rd);
       let p = add(camPos, scale(rd, t));
       let normal = getNormal(p)
 
-      let sceneColor = light(p, normal, lightPos, t);
+      let sceneColor = light(p, normal, camPos, lightPos, t);
 
       color(data, offs, sceneColor[0], sceneColor[1], sceneColor[2]);
 
