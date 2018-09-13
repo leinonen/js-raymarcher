@@ -52,9 +52,9 @@ function map(p) {
 
 function getNormal(p) {
   return normalize(vec3(
-    map(vec3(p.x + EPS, p.y, p.z)) - map(vec3(p.x - EPS, p.y, p.z)),
-    map(vec3(p.x, p.y + EPS, p.z)) - map(vec3(p.x, p.y - EPS, p.z)),
-    map(vec3(p.x, p.y, p.z + EPS)) - map(vec3(p.x, p.y, p.z - EPS))
+    map(vec3(p[0] + EPS, p[1], p[2])) - map(vec3(p[0] - EPS, p[1], p[2])),
+    map(vec3(p[0], p[1] + EPS, p[2])) - map(vec3(p[0], p[1] - EPS, p[2])),
+    map(vec3(p[0], p[1], p[2] + EPS)) - map(vec3(p[0], p[1], p[2] - EPS))
   ));
 }
 
@@ -85,8 +85,8 @@ function light(p, normal, lightPos, dist) {
   let objectColor = [1, .8, 0]
 
   if (dist <= clipFar) {
-    // sceneColor = scale(objectColor, diffuse);
-    sceneColor = objectColor;
+    sceneColor = add(sceneColor, scale(objectColor, diffuse));
+    // sceneColor = objectColor;
   }
 
   return sceneColor;
@@ -100,7 +100,9 @@ export function render_image(ctx, width, height) {
   let fov = 1.0;
   let lookAt = [0, 0, 1.0]
   let camPos = [0, 0, -2.5]
-  let lightPos = [0, 1, -3.5]
+  let lightPos = [0, -2, -3.5]
+
+  console.log(getNormal(vec3(0,0,0)));
 
   for (let y = 0; y < height; y++) {
     let dy = y / height;
