@@ -19,8 +19,7 @@
     "webpack-dev-server": "^2.11.1"
   },
   "babel": {
-    "plugins": [
-    ],
+    "plugins": [],
     "presets": [
       [
         "@babel/preset-env",
