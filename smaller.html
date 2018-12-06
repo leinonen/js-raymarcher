@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>javascript raymarching</title>
+</head>
+
+<body>
+  <h1>javascript raymarching</h1>
+  <script>
+    let time = 0;
+    const w = 80, h = 50, iterations = 22, clipFar = 6.0, step = 0.35, E = 0.001
+    const fov = .85, Ka = 0.1, Kd = 0.9, sp = 128.0, color = [1, 1, 1];
+    const { sin, cos, pow, abs, min, max, sqrt, PI } = Math
+    const W = (s, css, val) => { let el = document.querySelector(s); el.setAttribute('style', css); el.innerText = val; }
+    const length = (v) => sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
+    const el = (x) => document.createElement(x)
+    const W2 = (p, s) => `${p[0] * s},${p[1] * s},${p[2] * s}`
+    const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
+    const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+    const scale = (v, x) => [v[0] * x, v[1] * x, v[2] * x]
+    const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+    const dot = (a, b) => (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2])
+    const N = (v) => scale(v, 1.0 / length(v))
+    const R = (i, n) => sub(i, scale(n, 2.0 * dot(n, i)))
+    const rot = (p, a) => { let sa = sin(a); let ca = cos(a); return [p[0] * ca - p[1] * sa, p[0] * sa + p[1] * ca, p[2]]; }
+    const fmod = (n, m) => ((n < 0) ? abs(m) : 0) + (n % m);
+    const mod = (p, s) => [fmod(p[0], s), fmod(p[1], s), fmod(p[2], s)]
+    const sdBox = (p, b) => { let d = sub([abs(p[0]), abs(p[1]), abs(p[2])], b); return min(max(d[0], max(d[1], d[2]))) + length([max(d[0], 0), max(d[1], 0), max(d[2], 0)]); }
+    const sdCross = (p, s) => min(min(sdBox(p, [0.5, s, s]), sdBox(p, [s, 0.5, s])), sdBox(p, [s, s, 0.5]))
+    const map = (p) => sdCross(sub(mod(p, 1.0), [.5, .5, .5]), 0.045);
+
+    window.onload = function main() {
+      let container = el('div');
+      container.setAttribute('style', 'font-family: "Courier New"; font-size: 10px;');
+      document.body.appendChild(container)
+      document.body.setAttribute('style', 'background-color: #239;text-align: center; color: white;')
+
+      let offs = 0;
+      for (let y = 0; y < h; y++) {
+        let row = el('div')
+        for (let x = 0; x < w; x++) {
+          let e = el('span')
+          e.setAttribute('id', `s${offs++}`)
+          row.appendChild(e)
+        }
+        container.appendChild(row)
+      }
+
+      let lightPos = [0, 0, -3.5], lookAt = [0, 0, 1.0], camPos = [0, 0, -2.8]
+      let forward = N(sub(lookAt, camPos)), right = N([forward[2], 0.0, -forward[0]]);
+      let up = N(cross(forward, right));
+
+      function shader(uvx, uvy) {
+        let rd = N(add(forward, add(scale(right, uvx * fov), scale(up, uvy * fov))));
+        rd = rot(rd, time * PI * 0.2);
+        rd = rot([rd[2], rd[0], rd[1]], -time * PI * 0.3)
+        let t = 0.0;
+        for (let i = 0; i < iterations; i++) {
+          let dist = map(add(camPos, scale(rd, t)));
+          if ((dist < 0.0) || (t > clipFar)) break;
+          t += dist * step;
+        }
+        let final = [.2, .2, .2]
+        if (t < clipFar) {
+          let p = add(camPos, scale(rd, t));
+          let n = N([
+            map([p[0] + E, p[1], p[2]]) - map([p[0] - E, p[1], p[2]]),
+            map([p[0], p[1] + E, p[2]]) - map([p[0], p[1] - E, p[2]]),
+            map([p[0], p[1], p[2] + E]) - map([p[0], p[1], p[2] - E])
+          ]);
+          let ld = N(sub(lightPos, p));
+          let s = .2 * pow(max(0.0, dot(R(scale(ld, -1), n), N(sub(camPos, p)))), sp);
+          final = add(final, scale(color, Ka + Kd * max(0.0, dot(n, ld))));
+          final = add(final, [s, s, s])
+        }
+        return final
+      }
+
+      function render() {
+        time = Date.now() * .0006;
+        lookAt[2] = time;
+        camPos[2] = lookAt[2] - 2.5
+        lightPos[2] = lookAt[2] - 2.5
+        let data = [], offs = 0, dydh = 1 / h, dxdw = 1 / w, dy = 0, dx = 0
+        for (let y = 0; y < h; y++) {
+          dx = 0;
+          for (let x = 0; x < w; x++) {
+            let final = shader((2 * dx) - 1, (2 * (1 - dy)) - 1);
+            W(`#s${offs++}`, `color: rgb(${W2(final, 255)});`, String.fromCharCode(32 + final[0] * 40));
+            dx += dxdw;
+          }
+          dy += dydh
+        }
+        requestAnimationFrame(render)
+      }
+      render()
+    }
+
+  </script>
+</body>
+
+</html>
