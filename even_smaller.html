@@ -13,14 +13,12 @@ document.body.appendChild(box);document.body.setAttribute('style','font-weight: 
 let O=0;for(let y=0;y<h;y++){let rw=el('div');rw.setAttribute('style','overflow: hidden;white-space: nowrap;line-height: 9px; font-size: 10px;')
 for (let x=0;x<w;x++){let e=el('span');e.setAttribute('id',`s${O++}`);rw.appendChild(e)} box.appendChild(rw)}
 let lp=[0,0,-3.5],lookAt=[0,0,1],C=[0,0,-2.8],fw=N(SB(lookAt,C)),right=N([fw[2],0,-fw[0]]),up=N(X(fw,right)),S=(uvx,uvy)=>{
-let rd=N(A(fw, A(SC(right,uvx*fov),SC(up, uvy*fov))));rd=R2(rd,time*PI*0.2);rd=R2([rd[2],rd[0],rd[1]],-time*PI*0.3)
+let rd=N(A(fw,A(SC(right,uvx*fov),SC(up,uvy*fov))));rd=R2(rd,time*PI*0.2);rd=R2([rd[2],rd[0],rd[1]],-time*PI*0.3)
 let t=0.0;for(let i=0;i<I;i++){let dist=M(A(C,SC(rd,t)));if ((dist<0.0)||(t>CF))break;t+=dist*step;}
-let c=[.2,.2,.2];if(t<CF){let p=A(C,SC(rd,t)),
-n=N([M([p[0]+E,p[1],p[2]])-M([p[0]-E,p[1],p[2]]),M([p[0],p[1]+E,p[2]])-M([p[0],p[1]-E,p[2]]),M([p[0],p[1],p[2]+E])-M([p[0],p[1],p[2]-E])]),
-ld=N(SB(lp,p)),s=.2*pow(max(0,dot(R(SC(ld,-1),n),N(SB(C,p)))),sp);
-c=A(A(c,SC(color,Ka+Kd*max(0,dot(n,ld)))),[s,s,s]);}return c};(function P(){let O=0,dydh=1/h,dxdw=1/w,dy=0,dx=0;
-time=Date.now()*.0003;lookAt[2]=-time;C[2]=lookAt[2]-2.5;lp[2]=lookAt[2]-2.8
-for(let y=0;y<h;y++){dx=0;for(let x=0;x<w;x++){let c=S((2*dx)-1,(2*(1-dy))-1);
+let c=[.2,.2,.2];if(t<CF){let p=A(C,SC(rd,t)),n=N([M([p[0]+E,p[1],p[2]])-M([p[0]-E,p[1],p[2]]),M([p[0],p[1]+E,p[2]])-M([p[0],
+p[1]-E,p[2]]),M([p[0],p[1],p[2]+E])-M([p[0],p[1],p[2]-E])]),ld=N(SB(lp,p)),s=.2*pow(max(0,dot(R(SC(ld,-1),n),N(SB(C,p)))),sp);
+c=A(A(c,SC(color,Ka+Kd*max(0,dot(n,ld)))),[s,s,s]);}return c};(function P(){let O=0,dydh=1/h,dxdw=1/w,dy=0,dx=0;time=Date.now()*.0003;
+lookAt[2]=-time;C[2]=lookAt[2]-2.5;lp[2]=lookAt[2]-2.8;for(let y=0;y<h;y++){dx=0;for(let x=0;x<w;x++){let c=S((2*dx)-1,(2*(1-dy))-1);
 W(`#s${O++}`,`color: rgb(${W2(c,255)});`,String.fromCharCode(32+Math.floor(c[0]*20)));
 dx+=dxdw;}dy+=dydh;}requestAnimationFrame(P)})()}
 </script></body></html>
