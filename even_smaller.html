@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en"><body><script>/* tiny raymarcher by leinonen 2018 */
+let {sin,cos,pow,abs,min,max,sqrt,PI}=Math,el=(x)=>document.createElement(x);let time=0,w=80,h=60,I=25,
+CF=6.0,step=0.35,E=0.001,fov=.85,Ka=0.1,Kd=0.9,sp=8.0,color=[1,.8,.9],W=(s,c,v)=>{let el=document.querySelector(s);
+el.setAttribute('style',c);el.innerText=v;},W2=(p,s)=>`${p[0]*s},${p[1]*s},${p[2]*s}`,L=(v)=>sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]),
+A=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],SB=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],SC=(v,x)=>[v[0]*x,v[1]*x,v[2]*x],
+X=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],dot=(a,b)=>(a[0]*b[0])+(a[1]*b[1])+(a[2]*b[2]),
+R2=(p,a)=>{let sa=sin(a);let ca=cos(a);return [p[0]*ca-p[1]*sa,p[0]*sa+p[1]*ca,p[2]];},FM=(n,m)=>((n<0)?abs(m):0)+(n%m),
+mod=(p,s)=>[FM(p[0],s),FM(p[1],s),FM(p[2],s)],B=(p,b)=>{ let d=SB([abs(p[0]),abs(p[1]),abs(p[2])],b);return min(max(d[0],
+max(d[1],d[2])))+L([max(d[0],0),max(d[1],0),max(d[2],0)]);},XX=(p,s)=>min(min(B(p,[0.5,s,s]),B(p,[s,0.5,s])),B(p,[s,s,0.5])),
+M=(p)=>XX(SB(mod(p,1.0),[.5,.5,.5]),0.055),N=(v)=>SC(v,1/L(v)),R=(i,n)=>SB(i,SC(n,2*dot(n,i)));window.onload=()=>{let box=el('div');
+document.body.appendChild(box);document.body.setAttribute('style','font-weight: bold; font-family: "Courier New"; background-color: #239;text-align: center;')
+let O=0;for(let y=0;y<h;y++){let rw=el('div');rw.setAttribute('style','overflow: hidden;white-space: nowrap;line-height: 9px; font-size: 10px;')
+for (let x=0;x<w;x++){let e=el('span');e.setAttribute('id',`s${O++}`);rw.appendChild(e)} box.appendChild(rw)}
+let lp=[0,0,-3.5],lookAt=[0,0,1],C=[0,0,-2.8],fw=N(SB(lookAt,C)),right=N([fw[2],0,-fw[0]]),up=N(X(fw,right)),S=(uvx,uvy)=>{
+let rd=N(A(fw, A(SC(right,uvx*fov),SC(up, uvy*fov))));rd=R2(rd,time*PI*0.2);rd=R2([rd[2],rd[0],rd[1]],-time*PI*0.3)
+let t=0.0;for(let i=0;i<I;i++){let dist=M(A(C,SC(rd,t)));if ((dist<0.0)||(t>CF))break;t+=dist*step;}
+let c=[.2,.2,.2];if(t<CF){let p=A(C,SC(rd,t)),
+n=N([M([p[0]+E,p[1],p[2]])-M([p[0]-E,p[1],p[2]]),M([p[0],p[1]+E,p[2]])-M([p[0],p[1]-E,p[2]]),M([p[0],p[1],p[2]+E])-M([p[0],p[1],p[2]-E])]),
+ld=N(SB(lp,p)),s=.2*pow(max(0,dot(R(SC(ld,-1),n),N(SB(C,p)))),sp);
+c=A(A(c,SC(color,Ka+Kd*max(0,dot(n,ld)))),[s,s,s]);}return c};(function P(){let O=0,dydh=1/h,dxdw=1/w,dy=0,dx=0;
+time=Date.now()*.0003;lookAt[2]=-time;C[2]=lookAt[2]-2.5;lp[2]=lookAt[2]-2.8
+for(let y=0;y<h;y++){dx=0;for(let x=0;x<w;x++){let c=S((2*dx)-1,(2*(1-dy))-1);
+W(`#s${O++}`,`color: rgb(${W2(c,255)});`,String.fromCharCode(32+Math.floor(c[0]*20)));
+dx+=dxdw;}dy+=dydh;}requestAnimationFrame(P)})()}
+</script></body></html>
