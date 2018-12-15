@@ -4,7 +4,7 @@
   <h1>webgl and ascii rendering</h1>
   <script>
     const w = 80, h = 40
-    const message = 'CODEBYLEINONEN2018'
+    const message = 'CODEBYLEINONEN2018', credz = 'leinonen 2018'
     const vertexShaderSource = `attribute vec2 a_position; void main() { gl_Position = vec4(a_position, 0, 1); }`
     const fragmentShaderSource = `
 #ifdef GL_ES
@@ -185,6 +185,8 @@ void main( void ) {
             W(`#s${offs++}`, `color: rgba(${r},${g},${b}); background-color: rgba(${r*.1},${g*.1},${b*.1});`, message[floor(grey * message.length)]);
           }
         }
+        offs -= credz.length
+        credz.split('').forEach((c, i) => W(`#s${offs++}`, `color: white; background-color: black;`, credz[i]))
         requestAnimationFrame(render)
       }
       render()
