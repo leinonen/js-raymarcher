@@ -1,173 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <body>
   <h1>webgl and ascii rendering</h1>
   <script>
+    const w = 80, h = 40
     const message = 'CODEBYLEINONEN2018'
-
-    const vertexShaderSource = `
-attribute vec2 a_position; 
-void main() { 
-  gl_Position = vec4(a_position, 0, 1); 
-}
-`
-
-    const shaderSource = `
+    const vertexShaderSource = `attribute vec2 a_position; void main() { gl_Position = vec4(a_position, 0, 1); }`
+    const fragmentShaderSource = `
 #ifdef GL_ES
 precision mediump float;
 #endif
-
 uniform float time;
-uniform vec2 resolution;
-
+uniform vec2 res;
 #define PI 3.1415926535898
 #define EPS 0.005
-
-const int marchIterations = 128;
-
-mat2 rot2( float angle ) {
-  float c = cos( angle );
-  float s = sin( angle );
-  return mat2( c, s,-s, c);
-}
-
-float sdBox(vec3 p, vec3 b) {
-  vec3 d = abs(p) - b;
-  return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
-}
-
-float sdCross(vec3 p, float size) {
-  float d0 = sdBox(p, vec3(0.5,  size, size));
-  float d1 = sdBox(p, vec3(size, 0.5,  size));
-  float d2 = sdBox(p, vec3(size, size, 0.5)); 
-  return min(min(d0, d1), d2);
-}
-
-float map(vec3 p) {
-  p = mod(p, 1.0) - 0.5;
-  return sdCross(p, 0.05);
-}
-
-vec3 getNormal(in vec3 p) {	
-  return normalize(vec3(
-    map(vec3(p.x+EPS,p.y,p.z)) - map(vec3(p.x-EPS,p.y,p.z)),
-    map(vec3(p.x,p.y+EPS,p.z)) - map(vec3(p.x,p.y-EPS,p.z)),
-    map(vec3(p.x,p.y,p.z+EPS)) - map(vec3(p.x,p.y,p.z-EPS))
-  ));
-}
-
-float rayMarch(vec3 ro, vec3 rd, float stepSize, float clipNear, float clipFar) {
-  float t = 0.0;
-  for (int i = 0 ; i < marchIterations; i++) {
-    float k = map(ro + rd * t);
-    t += k * stepSize;
-    if ((k < clipNear) || (t > clipFar)) {
-      break;
-    }
-  }
-  return t;
-}
-
-vec3 rayDirection(vec2 uv, vec3 camPos, vec3 lookAt) {
-  float FOV = 0.75;
-  vec3 forward = normalize(lookAt + camPos);
-  vec3 right = normalize(vec3(forward.z, 0., -forward.x ));
-  vec3 up = normalize(cross(forward, right));
-  return normalize(forward + FOV*uv.x*right + FOV*uv.y*up);
-}
-
-vec3 lighting(vec3 p, vec3 camPos, vec3 lightPos) {
-  vec3 normal = getNormal(p);
-  vec3 lightDirection = lightPos - p;
-  vec3 eyeDirection = camPos - p;
-
-  float len = length(lightDirection);
-  lightDirection /= len;
-  float lightAtten = min(1.0 / ( 0.25*len*len ), 1.0 );
-
-  float ambient = .1;
-  float diffuse = max( 0.0, dot(normal, lightDirection) );
-  float specularPower = 3.0;
-  float specular = pow(max( 0.0, dot(reflect(-lightDirection, normal), normalize(eyeDirection)) ), specularPower);
-
-  vec3 sceneColor = vec3(0.0);
-  vec3 objectColor = vec3(.2, 1.0, .2);
-  vec3 lightColor = vec3(2.0);
-  sceneColor += (objectColor*(diffuse*0.8+ambient)+specular*0.2)*lightColor*lightAtten;
-  return sceneColor;
-}
-
+#define FOV 0.75
+const vec3 color = vec3(.2, 1.0, .2), lcolor = vec3(2.0);
+mat2 rot2( float angle ) { float c = cos( angle ); float s = sin( angle ); return mat2( c, s,-s, c); }
+float sdBox(vec3 p, vec3 b) { vec3 d = abs(p) - b; return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));}
+float sdCross(vec3 p, float size) { float d0 = sdBox(p, vec3(0.5,  size, size)); float d1 = sdBox(p, vec3(size, 0.5,  size)); float d2 = sdBox(p, vec3(size, size, 0.5)); return min(min(d0, d1), d2); }
+float map(vec3 p) { p = mod(p, 1.0) - 0.5; return sdCross(p, 0.05); }
 void main( void ) {
-  vec2 aspect = vec2(resolution.x/resolution.y, 1.0);
-  vec2 uv = (2.0*gl_FragCoord.xy/resolution.xy - 1.0); //  * aspect;
-	
-  vec3 lookAt   = vec3(0.0, 0.0, -time);
-  vec3 camPos   = lookAt + vec3(0.0, 0.0, lookAt.z - 2.5);
-  vec3 lightPos = lookAt + vec3(0.0, 1.0, lookAt.z - 1.0);
-	
-  vec3 ro = camPos; 
-  vec3 rd = rayDirection(uv, camPos, lookAt);
-  rd.xy *= rot2( PI*sin(-time*0.5)/4.0 );
-  rd.xz *= rot2( PI*sin(-time*0.5)/12.0 );
-
-  vec3 p = ro + rd * rayMarch(ro, rd, 0.75, 0.01, 150.0);
-
-  vec3 sceneColor = lighting(p, camPos, lightPos);
-
-  gl_FragColor = vec4(clamp(sceneColor, 0.0, 1.0), 1.0);
+  vec2 uv = (2.0*gl_FragCoord.xy/res.xy - 1.0);
+  vec3 look = vec3(0.0, 0.0, -time), cam = look + vec3(0.0, 0.0, look.z - 2.5), lightPos = look + vec3(0.0, 1.0, look.z - 1.0);
+  vec3 fw = normalize(look + cam), right = normalize(vec3(fw.z, 0., -fw.x )), up = normalize(cross(fw, right)), rd = normalize(fw + FOV*uv.x*right + FOV*uv.y*up);
+  rd.xy *= rot2( PI*sin(-time*0.5)/4.0 ); rd.xz *= rot2( PI*sin(-time*0.5)/7.0 );
+  float t = 0.0;
+  for (int i = 0 ; i < 128; i++) { float k = map(cam + rd * t); t += k * 0.75; if ((k < 0.01) || (t > 150.0)) { break; } }
+  vec3 p = cam + rd * t, n = normalize(vec3(map(vec3(p.x+EPS,p.y,p.z)) - map(vec3(p.x-EPS,p.y,p.z)), map(vec3(p.x,p.y+EPS,p.z)) - map(vec3(p.x,p.y-EPS,p.z)), map(vec3(p.x,p.y,p.z+EPS)) - map(vec3(p.x,p.y,p.z-EPS)) ));
+  vec3 ld = lightPos - p; float len = length(ld); ld /= len;
+  float Ka = .1, Kd = max( 0.0, dot(n, ld) ), Ks = pow(max( 0.0, dot(reflect(-ld, n), normalize(cam - p)) ), 3.0);
+  gl_FragColor = vec4(clamp((color*(Kd*0.8+Ka)+Ks*0.2)*lcolor*min(1.0 / ( 0.25*len*len ), 1.0 ), 0.0, 1.0), 1.0);
 }
-
 `
-
-    let time = 0;
-    let canvas;
-    let bufferInfo;
-    let uniforms = {};
-
-    const w = 80, h = 40
+    let time = 0, canvas, bufferInfo, uniforms = {};
     const { sin, cos, pow, abs, min, max, sqrt, floor, PI } = Math
     const W = (s, css, val) => { let el = document.querySelector(s); el.setAttribute('style', css); el.innerText = val; }
     const el = (x) => document.createElement(x)
 
-    function getShader(gl, type, source) {
-      let shader;
-      if (type == 'fragment') {
-        shader = gl.createShader(gl.FRAGMENT_SHADER);
-      } else if (type == 'vertex') {
-        shader = gl.createShader(gl.VERTEX_SHADER);
-      } else {
+    function getShader(gl, type, src) {
+      let s = gl.createShader(type == 'fragment' ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        alert(gl.getShaderInfoLog(s));
         return null;
       }
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        alert(gl.getShaderInfoLog(shader));
-        return null;
-      }
-      return shader;
+      return s;
     }
 
-    function compile(gl, vertexShaderSource, fragmentShaderSource) {
-      let vertexShader = getShader(gl, 'vertex', vertexShaderSource);
-      let fragmentShader = getShader(gl, 'fragment', fragmentShaderSource);
+    function compile(gl) {
+      let vs = getShader(gl, 'vertex', vertexShaderSource);
+      let fs = getShader(gl, 'fragment', fragmentShaderSource);
       let program = gl.createProgram();
-
-      gl.attachShader(program, vertexShader);
-      gl.attachShader(program, fragmentShader);
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
       gl.linkProgram(program);
-
-      gl.deleteShader(vertexShader);
-      gl.deleteShader(fragmentShader);
-
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
         gl.deleteProgram(program);
         throw new Error('shader initialization error')
       }
-      if (!program) {
-        return null
-      }
+      if (!program) { return null }
       return {
         program: program,
         uniformSetters: createUniformSetters(gl, program),
@@ -198,29 +93,18 @@ void main( void ) {
       function createUniformSetter(program, uniformInfo) {
         let location = gl.getUniformLocation(program, uniformInfo.name)
         let type = uniformInfo.type
-        if (type === gl.FLOAT) {
-          return function (v) {
-            gl.uniform1f(location, v)
-          }
-        }
-        if (type === gl.FLOAT_VEC2) {
-          return function (v) {
-            gl.uniform2fv(location, v)
-          }
-        }
+        if (type === gl.FLOAT) { return function (v) { gl.uniform1f(location, v) } }
+        if (type === gl.FLOAT_VEC2) { return function (v) { gl.uniform2fv(location, v) } }
         throw ('unknown type: 0x' + type.toString(16))
       }
-
       let uniformSetters = {}
       let numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS)
-
       for (let ii = 0; ii < numUniforms; ++ii) {
         let uniformInfo = gl.getActiveUniform(program, ii)
         if (!uniformInfo) {
           break
         }
         let name = uniformInfo.name
-        // remove the array suffix.
         if (name.substr(-3) === '[0]') {
           name = name.substr(0, name.length - 3)
         }
@@ -263,7 +147,7 @@ void main( void ) {
         container.appendChild(row)
       }
 
-      programInfo = compile(gl, vertexShaderSource, shaderSource)
+      programInfo = compile(gl)
       bufferInfo = {
         attribs: {
           a_position: {
@@ -281,7 +165,7 @@ void main( void ) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
         gl.clearColor(0.0, 0.0, 0.0, 1.0)
         gl.useProgram(programInfo.program);
-        uniforms.resolution = [gl.canvas.width, gl.canvas.height]
+        uniforms.res = [gl.canvas.width, gl.canvas.height]
         uniforms.time = time;
         applySetters(programInfo.uniformSetters, uniforms);
         applySetters(programInfo.attribSetters, bufferInfo.attribs)
@@ -307,5 +191,4 @@ void main( void ) {
     }
   </script>
 </body>
-
 </html>
