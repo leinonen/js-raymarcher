@@ -4,8 +4,8 @@
   <h1>webgl and ascii rendering</h1>
   <script>
     const w = 80, h = 40
-    const message = 'CODEBYLEINONEN2018', credz = 'leinonen 2018'
-    const vertexShaderSource = `attribute vec2 a_position; void main() { gl_Position = vec4(a_position, 0, 1); }`
+    const message = 'CODEBYLEINONEN2018', credz = 'leinonen 2018'.split('')
+    const vertexShaderSource = `attribute vec2 a_pos; void main() { gl_Position = vec4(a_pos, 0, 1); }`
     const fragmentShaderSource = `
 #ifdef GL_ES
 precision mediump float;
@@ -38,8 +38,8 @@ void main( void ) {
     const W = (s, css, val) => { let el = document.querySelector(s); el.setAttribute('style', css); el.innerText = val; }
     const el = (x) => document.createElement(x)
 
-    function getShader(gl, type, src) {
-      let s = gl.createShader(type == 'fragment' ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER);
+    function getShader(gl, isFrag, src) {
+      let s = gl.createShader(isFrag ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER);
       gl.shaderSource(s, src);
       gl.compileShader(s);
       if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
@@ -49,81 +49,8 @@ void main( void ) {
       return s;
     }
 
-    function compile(gl) {
-      let vs = getShader(gl, 'vertex', vertexShaderSource);
-      let fs = getShader(gl, 'fragment', fragmentShaderSource);
-      let program = gl.createProgram();
-      gl.attachShader(program, vs);
-      gl.attachShader(program, fs);
-      gl.linkProgram(program);
-      gl.deleteShader(vs);
-      gl.deleteShader(fs);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        gl.deleteProgram(program);
-        throw new Error('shader initialization error')
-      }
-      if (!program) { return null }
-      return {
-        program: program,
-        uniformSetters: createUniformSetters(gl, program),
-        attribSetters: createAttributeSetters(gl, program)
-      }
-    }
-
-    function createAttributeSetters(gl, program) {
-      let attribSetters = {}
-      let numAttribs = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES)
-      for (let ii = 0; ii < numAttribs; ++ii) {
-        let attribInfo = gl.getActiveAttrib(program, ii)
-        if (!attribInfo) {
-          break
-        }
-        let index = gl.getAttribLocation(program, attribInfo.name)
-        attribSetters[attribInfo.name] = function (b) {
-          gl.bindBuffer(gl.ARRAY_BUFFER, b.buffer)
-          gl.enableVertexAttribArray(index)
-          gl.vertexAttribPointer(
-            index, b.numComponents || b.size, b.type || gl.FLOAT, b.normalize || false, b.stride || 0, b.offset || 0)
-        }
-      }
-      return attribSetters
-    }
-
-    function createUniformSetters(gl, program) {
-      function createUniformSetter(program, uniformInfo) {
-        let location = gl.getUniformLocation(program, uniformInfo.name)
-        let type = uniformInfo.type
-        if (type === gl.FLOAT) { return function (v) { gl.uniform1f(location, v) } }
-        if (type === gl.FLOAT_VEC2) { return function (v) { gl.uniform2fv(location, v) } }
-        throw ('unknown type: 0x' + type.toString(16))
-      }
-      let uniformSetters = {}
-      let numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS)
-      for (let ii = 0; ii < numUniforms; ++ii) {
-        let uniformInfo = gl.getActiveUniform(program, ii)
-        if (!uniformInfo) {
-          break
-        }
-        let name = uniformInfo.name
-        if (name.substr(-3) === '[0]') {
-          name = name.substr(0, name.length - 3)
-        }
-        uniformSetters[name] = createUniformSetter(program, uniformInfo)
-      }
-      return uniformSetters
-    }
-
-    function applySetters(setters, values) {
-      Object.keys(values).forEach(name => {
-        let setter = setters[name]
-        if (setter) {
-          setter(values[name])
-        }
-      })
-    }
-
     window.onload = function main() {
-      document.body.setAttribute('style', 'font-size: 12px; font-weight: bold; font-family: "Courier New"; background-color: #000;text-align: center; color: white;')
+      document.body.setAttribute('style', 'font-size: 12px; font-weight: bold; font-family: "Courier New"; background-color: #000; text-align: center; color: white;')
       canvas = document.createElement('canvas');
       canvas.width = w
       canvas.height = h
@@ -133,51 +60,57 @@ void main( void ) {
         alert('OpenGL could not be initialized.');
         return;
       }
+      const vertexData = new Float32Array([-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0])
+      const vertexBuffer = gl.createBuffer()
+      const pixbuf = new Uint8Array(canvas.width * canvas.height * 4);
+
+      let vs = getShader(gl, false, vertexShaderSource), fs = getShader(gl, true, fragmentShaderSource), program = gl.createProgram();
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        gl.deleteProgram(program);
+        alert('shader initialization error')
+        return;
+      }
 
       let container = el('div');
       document.body.appendChild(container)
       let offs = 0;
       for (let y = 0; y < h; y++) {
         let row = el('div')
+        container.appendChild(row)
         for (let x = 0; x < w; x++) {
           let e = el('span')
           e.setAttribute('id', `s${offs++}`)
           row.appendChild(e)
         }
-        container.appendChild(row)
       }
-
-      programInfo = compile(gl)
-      bufferInfo = {
-        attribs: {
-          a_position: {
-            buffer: gl.createBuffer(),
-            numComponents: 2,
-            arrays: new Float32Array([-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0])
-          }
-        }
-      }
-  
-      const pixbuf = new Uint8Array(canvas.width * canvas.height * 4);
 
       function render() {
         time += 0.01;
+        uniforms.res = [w, h]
+        uniforms.time = time;    
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
         gl.clearColor(0.0, 0.0, 0.0, 1.0)
-        gl.useProgram(programInfo.program);
-        uniforms.res = [gl.canvas.width, gl.canvas.height]
-        uniforms.time = time;
-        applySetters(programInfo.uniformSetters, uniforms);
-        applySetters(programInfo.attribSetters, bufferInfo.attribs)
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-        gl.bindBuffer(gl.ARRAY_BUFFER, bufferInfo.attribs.a_position.buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, bufferInfo.attribs.a_position.arrays, gl.STATIC_DRAW);
+        gl.useProgram(program);
+        gl.uniform1f(gl.getUniformLocation(program, 'time'), uniforms.time)
+        gl.uniform2fv(gl.getUniformLocation(program, 'res'), uniforms.res)
+        let loc = gl.getAttribLocation(program, 'a_pos')
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+        gl.enableVertexAttribArray(loc)
+        gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
+        gl.viewport(0, 0, w, h);
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixbuf);
-        let offs = 0, index, ch, r, g, b, grey;
-        for (let y = 0; y < h; y++) {
-          for (let x = 0; x < w; x++) {
-            index = (y * canvas.width + x) << 2;
+        let offs = 0, index, ch, r, g, b, x, y, grey;
+        for (y = 0; y < h; y++) {
+          for (x = 0; x < w; x++) {
+            index = (y * w + x) << 2;
             r = pixbuf[index];
             g = pixbuf[index + 1];
             b = pixbuf[index + 2];
@@ -186,7 +119,7 @@ void main( void ) {
           }
         }
         offs -= credz.length
-        credz.split('').forEach((c, i) => W(`#s${offs++}`, `color: white; background-color: black;`, credz[i]))
+        credz.forEach((c, i) => W(`#s${offs++}`, `color: white; background-color: black;`, credz[i]))
         requestAnimationFrame(render)
       }
       render()
