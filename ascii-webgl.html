@@ -3,10 +3,11 @@
 <body>
   <h1>webgl and ascii rendering</h1>
   <script>
-    const w = 80, h = 40
-    const message = 'CODEBYLEINONEN2018', credz = 'leinonen 2018'.split('')
-    const vertexShaderSource = `attribute vec2 a_pos; void main() { gl_Position = vec4(a_pos, 0, 1); }`
-    const fragmentShaderSource = `
+    window.onload = function() {
+      const w = 80, h = 40
+      const message = 'CODEBYLEINONEN2018', credz = 'leinonen 2018'.split('')
+      const vertexShaderSource = `attribute vec2 a_pos; void main() { gl_Position = vec4(a_pos, 0, 1); }`
+      const fragmentShaderSource = `
 #ifdef GL_ES
 precision mediump float;
 #endif
@@ -33,24 +34,21 @@ void main( void ) {
   gl_FragColor = vec4(clamp((color*(Kd*0.8+Ka)+Ks*0.2)*lcolor*min(1.0 / ( 0.25*len*len ), 1.0 ), 0.0, 1.0), 1.0);
 }
 `
-    let time = 0, canvas, bufferInfo, uniforms = {};
-    const { sin, cos, pow, abs, min, max, sqrt, floor, PI } = Math
-    const W = (s, css, val) => { let el = document.querySelector(s); el.setAttribute('style', css); el.innerText = val; }
-    const el = (x) => document.createElement(x)
-
-    function getShader(gl, isFrag, src) {
-      let s = gl.createShader(isFrag ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER);
-      gl.shaderSource(s, src);
-      gl.compileShader(s);
-      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-        alert(gl.getShaderInfoLog(s));
-        return null;
+      let time = 0, canvas, uniforms = {};
+      const { sin, cos, pow, abs, min, max, sqrt, floor, PI } = Math
+      const W = (s, css, val) => { let el = document.querySelector(s); el.setAttribute('style', css); el.innerText = val; }
+      const el = (x) => document.createElement(x)
+      function getShader(gl, isFrag, src) {
+        let s = gl.createShader(isFrag ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          alert(gl.getShaderInfoLog(s));
+          return null;
+        }
+        return s;
       }
-      return s;
-    }
-
-    window.onload = function main() {
-      document.body.setAttribute('style', 'font-size: 12px; font-weight: bold; font-family: "Courier New"; background-color: #000; text-align: center; color: white;')
+      document.body.setAttribute('style', 'font-size: 12px; font-weight: bold; font-family: "Courier New"; background-color: #000; text-align: center; color: #fff;')
       canvas = document.createElement('canvas');
       canvas.width = w
       canvas.height = h
@@ -63,7 +61,6 @@ void main( void ) {
       const vertexData = new Float32Array([-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0])
       const vertexBuffer = gl.createBuffer()
       const pixbuf = new Uint8Array(canvas.width * canvas.height * 4);
-
       let vs = getShader(gl, false, vertexShaderSource), fs = getShader(gl, true, fragmentShaderSource), program = gl.createProgram();
       gl.attachShader(program, vs);
       gl.attachShader(program, fs);
@@ -75,10 +72,8 @@ void main( void ) {
         alert('shader initialization error')
         return;
       }
-
-      let container = el('div');
+      let container = el('div'), offs = 0;
       document.body.appendChild(container)
-      let offs = 0;
       for (let y = 0; y < h; y++) {
         let row = el('div')
         container.appendChild(row)
@@ -88,11 +83,10 @@ void main( void ) {
           row.appendChild(e)
         }
       }
-
       function render() {
         time += 0.01;
         uniforms.res = [w, h]
-        uniforms.time = time;    
+        uniforms.time = time;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
         gl.clearColor(0.0, 0.0, 0.0, 1.0)
         gl.useProgram(program);
@@ -115,11 +109,11 @@ void main( void ) {
             g = pixbuf[index + 1];
             b = pixbuf[index + 2];
             grey = (r + g + b) * 0.00130718954248366;
-            W(`#s${offs++}`, `color: rgba(${r},${g},${b}); background-color: rgba(${r*.1},${g*.1},${b*.1});`, message[floor(grey * message.length)]);
+            W(`#s${offs++}`, `color: rgba(${r},${g},${b}); background-color: rgba(${r * .1},${g * .1},${b * .1});`, message[floor(grey * message.length)]);
           }
         }
         offs -= credz.length
-        credz.forEach((c, i) => W(`#s${offs++}`, `color: white; background-color: black;`, credz[i]))
+        credz.forEach((c, i) => W(`#s${offs++}`, `color: #fff; background-color: #000;`, credz[i]))
         requestAnimationFrame(render)
       }
       render()
